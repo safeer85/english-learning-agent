@@ -89,9 +89,10 @@ graph_builder.add_edge("teacher_agent", END)
 
 graph = graph_builder.compile()
 
+sentence = input("Write your English sentence: ")
 
 result = graph.invoke({
-    "original_sentence": "okay i'll start the project from the English Learning Multi-Agent Assistant",
+    "original_sentence": sentence,
     "grammar_feedback": "",
     "vocabulary_feedback": "",
     "teacher_feedback": "",
