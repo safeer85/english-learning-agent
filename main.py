@@ -135,15 +135,20 @@ graph_builder.add_edge("teacher_agent", END)
 
 graph = graph_builder.compile()
 
-sentence = input("Write your English sentence: ")
+while True:
+    sentence = input("\nWrite your English sentence, or type 'exit' to quit: ")
 
-result = graph.invoke({
-    "original_sentence": sentence,
-    "corrected_sentence": "",
-    "grammar_feedback": "",
-    "vocabulary_feedback": "",
-    "teacher_feedback": "",
-    "final_answer": ""
-})
+    if sentence.lower() == "exit":
+        print("Goodbye! Keep practicing English.")
+        break
 
-print(result["final_answer"])
+    result = graph.invoke({
+        "original_sentence": sentence,
+        "corrected_sentence": "",
+        "grammar_feedback": "",
+        "vocabulary_feedback": "",
+        "teacher_feedback": "",
+        "final_answer": ""
+    })
+
+    print(result["final_answer"])
