@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, START, END
 
 class EnglishLearningState(TypedDict):
     original_sentence: str
+    corrected_sentence: str
     grammar_feedback: str
     vocabulary_feedback: str
     teacher_feedback: str
@@ -12,32 +13,80 @@ class EnglishLearningState(TypedDict):
 
 def grammar_agent(state: EnglishLearningState):
     sentence = state["original_sentence"]
+    corrected = sentence.strip()
+    feedback_items = []
 
-    feedback = f"""
-Grammar Agent:
-Original sentence: {sentence}
+    # Capitalize first letter
+    if corrected and corrected[0].islower():
+        corrected = corrected[0].upper() + corrected[1:]
+        feedback_items.append("Start the sentence with a capital letter.")
 
-Correction:
-- Capitalize "I".
-- Use "I'll" instead of "i'll".
-- The sentence should start with a capital letter.
-"""
+    # Fix lowercase "i"
+    if " i " in corrected:
+        corrected = corrected.replace(" i ", " I ")
+        feedback_items.append('Use "I" instead of "i".')
+
+    # Fix "i'll"
+    if "i'll" in corrected.lower():
+        corrected = corrected.replace("i'll", "I'll")
+        corrected = corrected.replace("I'll", "I'll")
+        feedback_items.append('Use "I’ll" with a capital "I".')
+
+    # Fix common phrase: want learn
+    if "want learn" in corrected.lower():
+        corrected = corrected.replace("want learn", "want to learn")
+        corrected = corrected.replace("Want learn", "Want to learn")
+        feedback_items.append('Use "want to learn", not "want learn".')
+
+    # Fix common phrase: need learn
+    if "need learn" in corrected.lower():
+        corrected = corrected.replace("need learn", "need to learn")
+        corrected = corrected.replace("Need learn", "Need to learn")
+        feedback_items.append('Use "need to learn", not "need learn".')
+
+    # Fix LangGraph capitalization
+    if "langgraph" in corrected.lower():
+        corrected = corrected.replace("langgraph", "LangGraph")
+        corrected = corrected.replace("Langgraph", "LangGraph")
+        feedback_items.append('Write the tool name as "LangGraph".')
+
+    # Fix project phrase
+    if "from the English Learning Multi-Agent Assistant" in corrected:
+        corrected = corrected.replace(
+            "from the English Learning Multi-Agent Assistant",
+            "with the English Learning Multi-Agent Assistant"
+        )
+        feedback_items.append('Use "with the project" instead of "from the project".')
+
+    if not feedback_items:
+        feedback = "Grammar Agent:\nYour sentence looks good. I did not find a major grammar mistake."
+    else:
+        feedback = "Grammar Agent:\n" + "\n".join(f"- {item}" for item in feedback_items)
 
     return {
+        "corrected_sentence": corrected,
         "grammar_feedback": feedback
     }
 
 
 def vocabulary_agent(state: EnglishLearningState):
-    feedback = """
-Vocabulary Agent:
-The phrase "start the project" is good.
+    sentence = state["corrected_sentence"]
 
-More natural options:
-- "begin the project"
-- "start working on the project"
-- "get started with the project"
-"""
+    suggestions = []
+
+    if "start" in sentence.lower():
+        suggestions.append('"start" is good. You can also say "begin" or "get started with".')
+
+    if "learn" in sentence.lower():
+        suggestions.append('"learn" is good. You can also say "study" or "practice", depending on the meaning.')
+
+    if "project" in sentence.lower():
+        suggestions.append('"project" is a good word here because you are building something step by step.')
+
+    if not suggestions:
+        feedback = "Vocabulary Agent:\nYour vocabulary is understandable."
+    else:
+        feedback = "Vocabulary Agent:\n" + "\n".join(f"- {item}" for item in suggestions)
 
     return {
         "vocabulary_feedback": feedback
@@ -46,6 +95,7 @@ More natural options:
 
 def teacher_agent(state: EnglishLearningState):
     original = state["original_sentence"]
+    corrected = state["corrected_sentence"]
     grammar = state["grammar_feedback"]
     vocabulary = state["vocabulary_feedback"]
 
@@ -55,23 +105,19 @@ English Learning Assistant
 Your original sentence:
 {original}
 
-Correct sentence:
-Okay, I'll start the project with the English Learning Multi-Agent Assistant.
+Corrected sentence:
+{corrected}
 
 {grammar}
 
 {vocabulary}
 
 Teacher Agent:
-Good job. Your meaning is clear. The main things to fix are:
-1. Capitalize "Okay".
-2. Capitalize "I".
-3. Use "I'll" correctly.
-4. Keep "English Learning Multi-Agent Assistant" capitalized because it is the project name.
+Good job. Your meaning is clear. Keep practicing by writing one sentence every day.
 """
 
     return {
-        "teacher_feedback": "The student understood the project idea.",
+        "teacher_feedback": "The student received grammar and vocabulary feedback.",
         "final_answer": final_answer
     }
 
@@ -93,6 +139,7 @@ sentence = input("Write your English sentence: ")
 
 result = graph.invoke({
     "original_sentence": sentence,
+    "corrected_sentence": "",
     "grammar_feedback": "",
     "vocabulary_feedback": "",
     "teacher_feedback": "",
